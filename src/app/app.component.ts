@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import {TomasuloComponent} from "./modules/tomasulo/tomasulo.component";
 
 @Component({
   selector: 'app-root',
