@@ -1,5 +1,5 @@
 <h1>Ciclo atual: <span>{{cycleActual}}</span> <button (click)="nextCycle()" style="margin-left: 10px">Próximo ciclo</button></h1>
-<div style="display: flex">
+<div style="display:flex">
   <table border="1">
     <caption>Status de intruções</caption>
     <thead>
@@ -17,6 +17,32 @@
       <td>{{ins.written}}</td>
     </tr>
   </table>
+
+  <table border="1" style="margin-top: 20px">
+    <caption>Buffer de reordenação</caption>
+    <thead>
+    <td>#</td>
+    <td>Instrução</td>
+    <td>busy</td>
+    <td>status</td>
+    <td>destination</td>
+    <td>value</td>
+    </thead>
+    <tr *ngFor="let buffer of bufferReorder">
+      <td>{{buffer.numInst}}</td>
+      <td>{{buffer.inst}}</td>
+      <td>{{buffer.busy}}</td>
+      <td>{{estadoTranslate(buffer.estado)}}</td>
+      <td>{{buffer.dest}}</td>
+      <td>{{buffer.valor}}</td>
+    </tr>
+  </table>
+  <br>
+</div>
+
+<br>
+
+<div style="padding: 20px; display: flex">
   <table border="1" style="margin-top: 20px">
     <caption>Estação de reserva</caption>
     <thead>
@@ -42,18 +68,20 @@
       <td>{{station.A}}</td>
     </tr>
   </table>
+  <table border="1" style="margin-top: 20px">
+    <caption>Banco de registradores</caption>
+    <thead>
+    <td></td>
+    <td>Valor</td>
+    <td>Reorder</td>
+    <td>Busy</td>
+    </thead>
+    <tr *ngFor="let reg of registers; index as i">
+      <td>{{'R'+ i}}</td>
+      <td>{{reg?.valor}}</td>
+      <td>{{'#'+ reg?.reorder}}</td>
+      <td>{{reg?.busy}}</td>
+    </tr>
+  </table>
+
 </div>
-
-
-
-<table border="1" style="margin-top: 20px">
-  <caption>Status de registradores</caption>
-  <thead>
-  <td>Nome</td>
-  <td>q1</td>
-  </thead>
-  <tr *ngFor="let ins of instructionsQueue">
-    <td>{{ins.instruction}}</td>
-    <td>{{ins.issue}}</td>
-  </tr>
-</table>
