@@ -22,13 +22,17 @@ export const InstructionType: Map<string, { }> = new Map([
   styleUrls: ['./tomasulo.component.scss']
 })
 export class TomasuloComponent implements OnInit {
-  instructions = [
-    'addi R1 R5 2',
-    'beq R3 R2 1',
-    'sub R5 R1 R6',
-    'lw R4 R2 0'
-  ];
+  // instructions = [
+  //   'lw R6 34 R2',
+  //   'lw R2 45 R3',
+  //   'mult R0 R2 R4',
+  //   'sub R8 R6 R2',
+  //   'div R9 R0 R6',
+  //   'add R6 R8 R2'
+  // ];
+  instructions = [' '];
   instructionsQueue: Array<Instruction> = [];
+  instructionQueueAux: Array<string> = [];
   //bufferReorder = {busy: false, instruction: '', state: '', destination: '', value: ''};
   registers: Array<Register> = [];
   reservationStationComponent: Array<ReservationStation>= []
@@ -36,6 +40,8 @@ export class TomasuloComponent implements OnInit {
   cycleActual = 0;
   branching = 0;
   notCompleted: any;
+  instructionOptionsAux = InstructionType;
+  instructionOptions:any = [];
 
   instructionsForm = this.formBuilder.group({
     op: '',
@@ -43,10 +49,13 @@ export class TomasuloComponent implements OnInit {
     reg1: '',
     reg2: '',
     numReg: '',
-    cicloADD: '',
-    cicloDIV: '',
-    cicloLOAD: '',
-    cicloBRANCH: '',
+  });
+
+  cyclesForm = this.formBuilder.group({
+    add: '',
+    mult: '',
+    load: '',
+    branch: ''
   });
 
   constructor(
@@ -57,6 +66,7 @@ export class TomasuloComponent implements OnInit {
     this.loadInstructionQueue();
     this.loadReservationStation(3, 3, 2);
     this.loadRegister();
+    this.loadInstructionsType();
   }
 
   onSubmit(): void {
@@ -69,12 +79,20 @@ export class TomasuloComponent implements OnInit {
     }
   }
 
+  loadInstructionsType(){
+    for(let key of this.instructionOptionsAux.keys()){
+      this.instructionOptions.push(key);
+    }
+  }
 
-  loadInstructionQueue(){
-    this.instructions.forEach(instruction => {
-      const instructionEl = new Instruction(instruction, 0, 0, 0, 0);
-      this.instructionsQueue.push(instructionEl);
-    });
+
+  loadInstructionQueue(instQueue:Array<string> = this.instructions){
+    if(instQueue[0] !== " "){
+      instQueue.forEach(instruction => {
+        const instructionEl = new Instruction(instruction, 0, 0, 0, 0);
+        this.instructionsQueue.push(instructionEl);
+      });
+    }
   }
 
   loadReservationStation(loaders: number, adders: number, multipliers: number){
@@ -120,7 +138,7 @@ export class TomasuloComponent implements OnInit {
         }
       })
       const existsInstructionNotComitted = this.bufferReorder.find(buffer => buffer.estado <= 3);
-      console.log(existsInstructionNotComitted)
+      //console.log(existsInstructionNotComitted)
       this.notCompleted = !(existsInstructionNotComitted);
     }
 
@@ -128,14 +146,14 @@ export class TomasuloComponent implements OnInit {
     if (nextInstruction){
       const dest = nextInstruction.instruction.split(' ')[1];
       const instructionType: any = InstructionType.get(nextInstruction.instruction.split(' ')[0]);
-      console.log("BranchSizeINI = " + this.branching)
+      //console.log("BranchSizeINI = " + this.branching)
       if(this.branching === 0){
         this.bufferReorder.push(new BufferReordenamento(this.cycleActual + 1, nextInstruction.instruction, true, 1, dest, -1, instructionType.cycles));
         this.enterReservationStation(this.bufferReorder[this.cycleActual]);
       }else{
         this.bufferReorder.push(new BufferReordenamento(this.cycleActual + 1, nextInstruction.instruction, true, 5, dest, -1, instructionType.cycles));
         this.branching--;
-        console.log(this.branching)
+        //console.log(this.branching)
       }
 
     }
@@ -252,15 +270,30 @@ export class TomasuloComponent implements OnInit {
   }
 
   canExecute(numberOfInstructionActual: number){
+    let flag: boolean = false;
+
     const currentBuffer = this.bufferReorder.find(buffer => buffer.numInst === numberOfInstructionActual);
-    const lastBuffer = this.bufferReorder.find(buffer => buffer.numInst === numberOfInstructionActual-1);
-    if (lastBuffer && currentBuffer){
-      const destLast = lastBuffer.inst.split(' ')[1];
-      const [opCode, dest, reg1, reg2] = currentBuffer.inst.split(' ');
-      // SE reg1 ou 2 for == destino do ultimo não pode pOrem pode se estiver na parte de escrita
-      return lastBuffer.estado >= 3 || !(reg1 === destLast || reg2 === destLast);
+
+    let [opCode, dest, reg1, reg2]: any = currentBuffer?.inst.split(' ');
+
+    let lastBuffer;
+    for(let i = 1; i < numberOfInstructionActual; i++) {
+      lastBuffer = this.bufferReorder.find(buffer => buffer.numInst === i);
+
+      let destLast = lastBuffer.inst.split(' ')[1];
+
+      if (lastBuffer && currentBuffer){
+        if (reg1 === destLast || reg2 === destLast){
+          if(lastBuffer.estado < 3){
+            console.log(currentBuffer.inst.split(' ')[0] + " Não pode rodar");
+            flag = true;
+          }
+        }
+
+      }
     }
-    return true;
+
+    return !flag;
   }
 
   estadoTranslate(estado: number){
@@ -423,4 +456,37 @@ export class TomasuloComponent implements OnInit {
     }
 
   }
+
+  // MENU
+  addInstructionMenu(){
+    let newInstructions = this.instructionsForm.value;
+    if(newInstructions.length > 1){
+      for(let inst of newInstructions){
+        let {op, regDest, reg1, reg2} = inst.value
+        this.instructionQueueAux.push(op + " " + regDest + " " + reg1 + " " + reg2);
+      }
+    }else{
+      let {op, regDest, reg1, reg2} = this.instructionsForm.value
+      this.instructionQueueAux.push(op + " " + regDest + " " + reg1 + " " + reg2);
+    }
+
+    this.loadInstructionQueue(this.instructionQueueAux);
+    this.instructionQueueAux.pop();
+  }
+
+  configureCycles(){
+    let {add, mult, load, branch} = this.cyclesForm.value;
+
+    console.log(load);
+
+    InstructionType.set("lw", {type: 'memory', cycles: (load <= 0)? 2 : load});
+    InstructionType.set("sw", {type: 'memory', cycles: (load <= 0)? 2 : load});
+    InstructionType.set("add", {type: 'arithmetic', cycles: (add <= 0)? 1 : add});
+    InstructionType.set("addi", {type: 'arithmetic', cycles: (add <= 0)? 1 : add});
+    InstructionType.set("sub", {type: 'arithmetic', cycles: (add <= 0)? 1 : add});
+    InstructionType.set("mult", {type: 'arithmetic', cycles: (mult <= 0)? 2 : mult});
+    InstructionType.set("div", {type: 'arithmetic', cycles: (mult <= 0)? 2 : mult});
+    InstructionType.set("beq", {type: 'branch', cycles: (branch <= 0)? 1 : branch});
+  }
+
 }

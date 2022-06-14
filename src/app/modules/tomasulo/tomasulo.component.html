@@ -1,109 +1,147 @@
- <div class="row">
-    <div class="pos-f-t">
-      <div class="collapse" id="navbarToggleExternalContent">
-        <div class="p-4">
-          <h5 class="text-white h4">Collapsed content</h5>
-          <span class="text-muted">Toggleable via the navbar brand.</span>
-        </div>
-      </div>
-      <button class="navbar-toggler navbar-light" type="button" data-toggle="collapse" data-target="#navbarToggleExternalContent" aria-controls="navbarToggleExternalContent" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-    </div>
-
+<div class="container-fluid py-3 px-5">
+  <div class="row pb-4">
     <div class="col justify-content-center text-center">
       <h1>Simulador do algoritmo de Tomasulo</h1>
       <p>Algoritmo desenvolvido por Robert Tomasulo em 1997 </p>
     </div>
   </div>
-
-  <div class="container pt-5">
   <div class="row justify-content-between">
-    <div class="col-6">
-      <h5>Ciclo atual: <b>{{cycleActual}}</b></h5>
-    </div>
-    <div class="col-2 ">
-      <button class="btn btn-sm btn-block" (click)="nextCycle()" [disabled]="notCompleted">{{cycleActual <= 0 ? 'Começar': 'Próximo ciclo'}}</button>
-    </div>
-  </div>
+    <div class="col-3 ">
+      <div ><h5>Customização do simulador</h5></div>
+      <div class="row">
+        <div class="col-12">
+          <h6>Instruções</h6>
+          <form [formGroup]="instructionsForm" (ngSubmit)="onSubmit()">
+            <select class="form-select pr-3 mr-1" id="op" formControlName="op" placeholder="selecione">
+              <option selected disabled></option>
+              <option *ngFor="let inst of instructionOptions" [value]="inst">{{inst}}</option>
+            </select>
 
-  <div class="row">
-      <div class="col-2">
-        <h5>Fila de instruções</h5>
-        <table class="table table-bordered table-sm">
-          <tr *ngFor="let ins of instructionsQueue; index as i">
-            <td [ngClass]="{'select': (i == cycleActual-1)} ">{{ins.instruction}}</td>
-          </tr>
-        </table>
+            <select class="form-select pr-3 mr-1" id="regDest" formControlName="regDest" placeholder="selecione">
+              <option selected disabled></option>
+              <option *ngFor="let reg of registers; index as i" [value]="'R' + i">{{'R'+ i}}</option>
+            </select>
+
+            <select class="form-select pr-3 mr-1" id="reg1" formControlName="reg1" placeholder="selecione">
+              <option selected disabled>  </option>
+              <option *ngFor="let reg of registers; index as i" [value]="'R' + i">{{'R'+ i}}</option>
+            </select>
+
+            <select class="form-select pr-3" id="reg2" formControlName="reg2" placeholder="selecione">
+              <option selected disabled>  </option>
+              <option *ngFor="let reg of registers; index as i" [value]="'R' + i">{{'R'+ i}}</option>
+            </select><br><br>
+            <button class="btn" (click)="addInstructionMenu()" class="btn btn-primary btn-block">Adicionar instrução</button>
+
+            <br><br>
+
+          </form>
+          <form [formGroup]="cyclesForm">
+            <h6>Ciclos por instrução:</h6>
+
+            <label>ADD/SUB:</label>
+            <input type="number" id="add" formControlName="add" class="form-control" min="0" placeholder="1">
+            <label>DIV/MULT:</label>
+            <input type="number" id="mult" formControlName="mult" class="form-control" min="0" placeholder="2">
+            <label>LOAD:</label>
+            <input type="number" id="load" formControlName="load" class="form-control" min="0" placeholder="2">
+            <label>BRANCH:</label>
+            <input type="number" id="branch" formControlName="branch" class="form-control" min="0" placeholder="1">
+
+            <br>
+            <button type="submit" (click)="configureCycles()" class="btn btn-primary btn-block">Adicionar Ciclos</button>
+          </form>
+        </div>
       </div>
-      <div class="col">
-        <h5>Buffer de reordenamento</h5>
-        <table class="table table-bordered table-sm">
-          <thead>
-          <td>#</td>
-          <td>Instrução</td>
-          <td>Está ocupado?</td>
-          <td>Status</td>
-          <td>Destino</td>
-          <td>Valor</td>
-          </thead>
-          <tr *ngFor="let buffer of bufferReorder" [ngClass]="{'issue': buffer.estado === 1, 'executing': buffer.estado === 2, 'written': buffer.estado === 3}">
-            <td>{{buffer.numInst}}</td>
-            <td>{{buffer.inst}}</td>
-            <td>{{buffer.busy ? 'Sim' : 'Não'}}</td>
-            <td>{{estadoTranslate(buffer.estado)}}</td>
-            <td>{{buffer.dest}}</td>
-            <td>{{buffer.valor}}</td>
-          </tr>
-        </table>
-      </div>
-  </div>
-
-  <div class="row">
-    <div class="col-8">
-      <h5>Estação de Reserva</h5>
-      <table class="table table-bordered table-sm">
-        <thead>
-        <td>Nome</td>
-        <td>Está ocupada?</td>
-        <td>Op</td>
-        <td>vj</td>
-        <td>vk</td>
-        <td>qj</td>
-        <td>qk</td>
-        <td>Destino</td>
-        <td>A [Endereço de memória]</td>
-        </thead>
-        <tr *ngFor="let station of reservationStationComponent">
-          <td>{{station.name}}</td>
-          <td>{{station.busy ? 'Sim' : 'Não'}}</td>
-          <td>{{station.instruction}}</td>
-          <td>{{station.vj}}</td>
-          <td>{{station.vk}}</td>
-          <td>{{station.qj}}</td>
-          <td>{{station.qk}}</td>
-          <td>{{station.dest}}</td>
-          <td>{{station.A}}</td>
-        </tr>
-      </table>
     </div>
+    <div class="col-9">
+      <div class="row">
+        <div class="col-6">
+          <h5>Ciclo atual: <b>{{cycleActual}}</b></h5>
+        </div>
+        <div class="col-2 ">
+          <button class="btn btn-sm btn-block" (click)="nextCycle()" [disabled]="notCompleted">{{cycleActual <= 0 ? 'Começar': 'Próximo ciclo'}}</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-2">
+          <h5>Fila de instruções</h5>
+          <table class="table table-bordered table-sm">
+            <tr *ngFor="let ins of instructionsQueue; index as i">
+              <td [ngClass]="{'select': (i == cycleActual-1)} ">{{ins.instruction}}</td>
+            </tr>
+          </table>
+        </div>
+        <div class="col">
+          <h5>Buffer de reordenamento</h5>
+          <table class="table table-bordered table-sm">
+            <thead>
+            <td>#</td>
+            <td>Instrução</td>
+            <td>Está ocupado?</td>
+            <td>Status</td>
+            <td>Destino</td>
+            <td>Valor</td>
+            </thead>
+            <tr *ngFor="let buffer of bufferReorder" [ngClass]="{'issue': buffer.estado === 1, 'executing': buffer.estado === 2, 'written': buffer.estado === 3}">
+              <td>{{buffer.numInst}}</td>
+              <td>{{buffer.inst}}</td>
+              <td>{{buffer.busy ? 'Sim' : 'Não'}}</td>
+              <td>{{estadoTranslate(buffer.estado)}}</td>
+              <td>{{buffer.dest}}</td>
+              <td>{{buffer.valor}}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
 
-    <div class="col-4">
-      <h5>Banco de Registradores</h5>
-      <table class="table table-bordered table-sm">
-        <thead>
-        <td></td>
-        <td>Valor</td>
-        <td>Reorder</td>
-        <td>Está ocupado?</td>
-        </thead>
-        <tr *ngFor="let reg of registers; index as i">
-          <td>{{'R'+ i}}</td>
-          <td>{{reg?.valor}}</td>
-          <td>{{'#'+ reg?.reorder}}</td>
-          <td>{{reg?.busy ? 'Sim': 'Não'}}</td>
-        </tr>
-      </table>
+      <div class="row">
+        <div class="col-8">
+          <h5>Estação de Reserva</h5>
+          <table class="table table-bordered table-sm">
+            <thead>
+            <td>Nome</td>
+            <td>Está ocupada?</td>
+            <td>Op</td>
+            <td>vj</td>
+            <td>vk</td>
+            <td>qj</td>
+            <td>qk</td>
+            <td>Destino</td>
+            <td>A [Endereço de memória]</td>
+            </thead>
+            <tr *ngFor="let station of reservationStationComponent">
+              <td>{{station.name}}</td>
+              <td>{{station.busy ? 'Sim' : 'Não'}}</td>
+              <td>{{station.instruction}}</td>
+              <td>{{station.vj}}</td>
+              <td>{{station.vk}}</td>
+              <td>{{station.qj}}</td>
+              <td>{{station.qk}}</td>
+              <td>{{station.dest}}</td>
+              <td>{{station.A}}</td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="col-4">
+          <h5>Banco de Registradores</h5>
+          <table class="table table-bordered table-sm">
+            <thead>
+            <td></td>
+            <td>Valor</td>
+            <td>Reorder</td>
+            <td>Está ocupado?</td>
+            </thead>
+            <tr *ngFor="let reg of registers; index as i">
+              <td>{{'R'+ i}}</td>
+              <td>{{reg?.valor}}</td>
+              <td>{{'#'+ reg?.reorder}}</td>
+              <td>{{reg?.busy ? 'Sim': 'Não'}}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -111,24 +149,8 @@
 
 <div>
   <form [formGroup]="instructionsForm" (ngSubmit)="onSubmit()">
-    <label>Instrução:</label><br>
-    <input type="text" id="op" formControlName="op">
-    <input type="text" id="regDest" formControlName="regDest">
-    <input type="text" id="reg1" formControlName="reg1">
-    <input type="text" id="reg2" formControlName="reg2"><br>
 
-    <label>Número de registradores:</label>
-    <input type="number" id="numReg" formControlName="numReg"><br>
 
-    <label>Ciclos por instrução:</label><br>
-      <label>ADD/SUB:</label>
-      <input type="number" id="cicloADD" formControlName="cicloADD">
-      <label>DIV/MULT:</label>
-      <input type="number" id="cicloDIV" formControlName="cicloDIV">
-      <label>LOAD:</label>
-      <input type="number" id="cicloLOAD" formControlName="cicloLOAD">
-      <label>BRANCH:</label>
-      <input type="number" id="cicloBRANCH" formControlName="cicloBRANCH">
     <br>
   </form>
 </div>
@@ -210,7 +232,7 @@
 <!--    <td>Reorder</td>-->
 <!--    <td>Busy</td>-->
 <!--    </thead>-->
-<!--    <tr *ngFor="let reg of registers; index as i">-->
+<!--    <tr *ngFor="let reg of registersFloat; index as i">-->
 <!--      <td>{{'R'+ i}}</td>-->
 <!--      <td>{{reg?.valor}}</td>-->
 <!--      <td>{{'#'+ reg?.reorder}}</td>-->
