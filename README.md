@@ -1,27 +1,33 @@
-# Trab02
+# Simulador do Algoritmo de Tomasulo - Arquitetura de Computadores III
+### Criado por Leonardo Faria, Luiza Parente e Raíssa Lopes
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 13.0.4.
+Este trabalho tem como objetivo simular o alogoritmo de Tomasulo, desenvolvido por Robert Tomasulo em 1967.
 
-## Development server
+O algoritmo é uma técnica de escalonamento dinâmico de instruções que utiliza renomeação e “buferização” de registradores com o intuito de gerenciar esses conflitos de dados e extrair um melhor desempenho dos processadores.
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
+A interface gráfica do simulador criado é composta por uma **Fila de Instruções**, uma **Estação de Reserva**, um **Banco de Registradores** e um **Buffer de Reordenamento**.
 
-## Code scaffolding
+## Rodando a aplicação
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+Com o `Angular` e o `Npm` já instalados na máquina, é necessário:
 
-## Build
+* Dar git clone no projeto, com o comando `git clone https://github.com/Ra-Lopess/trab02.git` em uma pasta desejada
+* Rodar `npm i` para instalar as dependências
+* Rodar `ng serve` para rodar a aplicação e acesse http://localhost:4200/
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+## O simulador
 
-## Running unit tests
+![image](https://user-images.githubusercontent.com/64044014/173719166-570fbb9b-1758-4c88-9a02-7a4084aa5732.png)
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+Na parte esquerda da interface é possível fazer a customização do simulador, sendo possível:
+* Adicionar instruções MIPS na fila de instruções, sendo elas: ADD, SUB, LW, SW, MULT, DIV, BEQ e ADDI;
+* Alterar a quantidade de ciclos por instruções, caso não seja adicionado nenhum valor, é enviado um valor default do campo
 
-## Running end-to-end tests
+É importante ressaltar que a quantidade de estações e reserva por unidade lógica e a quantidade de registradores são valores estáticos, sendo possível fazer a alteração deles apenas no código.
 
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
-
-## Further help
-
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+Já na parte direita da interface podemos acompanhar o diretamente andamento do simulador:
+* O botão começar dá início ao simulador e, após iniciado, se torna o botão para ir para o próximo ciclo
+* Para uma melhor visualização das etapas, no momento em que uma instrução entra no Buffer de Reordenamento ela recebe uma cor de acordo com seu status:
+  *  Amarelo para _Issue_
+  *  Azul escuro para _Executing_
+  *  Verde para _Written_
