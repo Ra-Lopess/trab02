@@ -13,7 +13,7 @@ export class ReservationStation {
     public qj: number,
     public qk: number,
     public dest: number,
-    public A: '',
+    public A: string,
   ) {}
 
   leaveReserve(){

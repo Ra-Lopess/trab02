@@ -18,25 +18,33 @@
             </select>
 
             <select class="form-select pr-3 mr-1" id="regDest" formControlName="regDest" placeholder="selecione">
-              <option selected disabled></option>
-              <option *ngFor="let reg of registers; index as i" [value]="'R' + i">{{'R'+ i}}</option>
-            </select>
-
-            <select class="form-select pr-3 mr-1" id="reg1" formControlName="reg1" placeholder="selecione">
               <option selected disabled>  </option>
               <option *ngFor="let reg of registers; index as i" [value]="'R' + i">{{'R'+ i}}</option>
             </select>
+
+            <select *ngIf="!(f['op'].value === 'sw' || f['op'].value === 'lw')" class="form-select pr-3 mr-1" id="reg1" formControlName="reg1" placeholder="selecione">
+              <option selected disabled></option>
+              <option *ngFor="let reg of registers; index as i" [value]="'R' + i">{{'R'+ i}}</option>
+            </select>
+            <select *ngIf="(f['op'].value === 'sw' || f['op'].value === 'lw')" class="form-select pr-3 mr-1" id="reg_1" formControlName="reg1" placeholder="selecione">
+              <option selected disabled></option>
+                <option *ngFor="let j of counter(10); let i = index" [value]="i">{{i}}</option>
+            </select>
+
 
             <select class="form-select pr-3" id="reg2" formControlName="reg2" placeholder="selecione">
               <option selected disabled>  </option>
               <option *ngFor="let reg of registers; index as i" [value]="'R' + i">{{'R'+ i}}</option>
             </select><br><br>
+            <div *ngIf="f['op'].errors && submitted">
+              <span class="text-danger info" *ngIf="f['op'].errors['required']">Todos os campos devem ser preenchidos!</span>
+            </div>
             <button class="btn" (click)="addInstructionMenu()" class="btn btn-primary btn-block">Adicionar instrução</button>
 
             <br><br>
 
           </form>
-          <form [formGroup]="cyclesForm">
+          <form [formGroup]="cyclesForm" (change)="submiteddCycles = false">
             <h6>Ciclos por instrução:</h6>
 
             <label>ADD/SUB:</label>
@@ -49,6 +57,7 @@
             <input type="number" id="branch" formControlName="branch" class="form-control" min="0" placeholder="1">
 
             <br>
+            <span class="text-success info" *ngIf="submiteddCycles">Ciclos por instrução atualizado com sucesso.</span>
             <button type="submit" (click)="configureCycles()" class="btn btn-primary btn-block">Adicionar Ciclos</button>
           </form>
         </div>
@@ -56,7 +65,7 @@
     </div>
     <div class="col-9">
       <div class="row">
-        <div class="col-6">
+        <div class="col-10">
           <h5>Ciclo atual: <b>{{cycleActual}}</b></h5>
         </div>
         <div class="col-2 ">
@@ -86,7 +95,7 @@
             <tr *ngFor="let buffer of bufferReorder" [ngClass]="{'issue': buffer.estado === 1, 'executing': buffer.estado === 2, 'written': buffer.estado === 3}">
               <td>{{buffer.numInst}}</td>
               <td>{{buffer.inst}}</td>
-              <td>{{buffer.busy ? 'Sim' : 'Não'}}</td>
+              <td [ngClass]="{'ocupado': buffer?.busy}">{{buffer.busy ? 'Sim' : 'Não'}}</td>
               <td>{{estadoTranslate(buffer.estado)}}</td>
               <td>{{buffer.dest}}</td>
               <td>{{buffer.valor}}</td>
@@ -129,13 +138,13 @@
           <table class="table table-bordered table-sm">
             <thead>
             <td></td>
-            <td>Valor</td>
+            <td>Status</td>
             <td>Reorder</td>
             <td>Está ocupado?</td>
             </thead>
-            <tr *ngFor="let reg of registers; index as i">
+            <tr *ngFor="let reg of registers; index as i" [ngClass]="{'ocupado': reg?.busy}">
               <td>{{'R'+ i}}</td>
-              <td>{{reg?.valor}}</td>
+              <td>{{reg?.status}}</td>
               <td>{{'#'+ reg?.reorder}}</td>
               <td>{{reg?.busy ? 'Sim': 'Não'}}</td>
             </tr>
@@ -145,14 +154,6 @@
     </div>
   </div>
 
-</div>
-
-<div>
-  <form [formGroup]="instructionsForm" (ngSubmit)="onSubmit()">
-
-
-    <br>
-  </form>
 </div>
 
 <!--<div style="display:flex">-->

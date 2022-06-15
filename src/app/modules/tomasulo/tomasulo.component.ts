@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder } from '@angular/forms';
+import {FormBuilder, Validators} from '@angular/forms';
 import {Instruction} from "./instruction";
 import {ReservationStation} from "./reservation-station";
 import {Register} from "./register";
@@ -11,8 +11,8 @@ export const InstructionType: Map<string, { }> = new Map([
     ['add', {type: 'arithmetic', cycles: 1}],
     ['addi', {type: 'arithmetic', cycles: 3}],
     ['sub', {type: 'arithmetic', cycles: 1}],
-    ['mult', {type: 'arithmetic', cycles: 2}],
-    ['div', {type: 'arithmetic', cycles: 2}],
+    ['mult', {type: 'arithmetic', cycles: 10}],
+    ['div', {type: 'arithmetic', cycles: 20}],
     ['beq', {type: 'branch', cycles: 1}]
   ]);
 
@@ -22,15 +22,13 @@ export const InstructionType: Map<string, { }> = new Map([
   styleUrls: ['./tomasulo.component.scss']
 })
 export class TomasuloComponent implements OnInit {
-  // instructions = [
-  //   'lw R6 34 R2',
-  //   'lw R2 45 R3',
-  //   'mult R0 R2 R4',
-  //   'sub R8 R6 R2',
-  //   'div R9 R0 R6',
-  //   'add R6 R8 R2'
-  // ];
-  instructions = [' '];
+  instructions = [
+    'lw R6 34 R2',
+    'beq R0 R0 1',
+    'add R6 R8 R2',
+    'add R7 R8 R2'
+  ];
+  //instructions = [' '];
   instructionsQueue: Array<Instruction> = [];
   instructionQueueAux: Array<string> = [];
   //bufferReorder = {busy: false, instruction: '', state: '', destination: '', value: ''};
@@ -42,13 +40,14 @@ export class TomasuloComponent implements OnInit {
   notCompleted: any;
   instructionOptionsAux = InstructionType;
   instructionOptions:any = [];
+  submitted = false;
+  submiteddCycles = false;
 
   instructionsForm = this.formBuilder.group({
-    op: '',
-    regDest: '',
-    reg1: '',
-    reg2: '',
-    numReg: '',
+    op: ['', [Validators.required]],
+    regDest: ['', [Validators.required]],
+    reg1: ['', [Validators.required]],
+    reg2: ['', [Validators.required]],
   });
 
   cyclesForm = this.formBuilder.group({
@@ -75,7 +74,7 @@ export class TomasuloComponent implements OnInit {
 
   loadRegister(numReg: number = 10){
     for(let i = 0; i < numReg; i++){
-      this.registers.push(new Register(3, 0, false));
+      this.registers.push(new Register(this.getRandomInt(1, 100), 0, false, ""));
     }
   }
 
@@ -128,6 +127,7 @@ export class TomasuloComponent implements OnInit {
             let valor = this.registers.find(reg => reg.reorder === buffer.numInst)?.valor
             buffer.valor = (valor) ? valor : 0;
             this.leaveReservationStation(buffer.numInst);
+            this.updateRegisters(buffer.numInst);
             buffer.cyclesToComplete = -1;
           }
 
@@ -180,7 +180,12 @@ export class TomasuloComponent implements OnInit {
   }
 
   isInReservationStation(numInst: number){
-    return this.reservationStationComponent.find(res => res.dest === numInst);
+    let flag = true;
+    let buffer = this.bufferReorder.find(buffer => buffer.numInst === numInst);
+    let resStation = this.reservationStationComponent.find(res => res.dest === numInst);
+    if(buffer.inst.split(' ')[0] != "sw" && !resStation)
+      flag = false;
+    return flag;
   }
 
   leaveReservationStation(numInst: number){
@@ -258,6 +263,7 @@ export class TomasuloComponent implements OnInit {
       reservationSpace.qj = qj;
       reservationSpace.qk = qk;
       reservationSpace.dest = dest;
+      reservationSpace.A = A;
 
       return true;
     }else{
@@ -265,9 +271,6 @@ export class TomasuloComponent implements OnInit {
     }
   }
 
-  enterBranch(opCode: string, vj: number, vk: number, qj: number, qk: number, dest: number, A: string){
-
-  }
 
   canExecute(numberOfInstructionActual: number){
     let flag: boolean = false;
@@ -339,7 +342,7 @@ export class TomasuloComponent implements OnInit {
     dest.slice(1)
     const numDest: number = Number(dest.slice(1)) | 0;
     if(!this.registers[numDest]){
-      this.registers[numDest] = new Register(0, numInstruction, true);
+      this.registers[numDest] = new Register(0, numInstruction, true, '');
     }
 
 
@@ -363,7 +366,7 @@ export class TomasuloComponent implements OnInit {
     if(r2.includes('R')){
       reg2 = this.registers[Number(r2.slice(1)) | 0];
     }else{
-      reg2 = new Register(Number(r2), 0,true);
+      reg2 = new Register(Number(r2), 0,true, "");
     }
 
     let regDest = this.registers[Number(rD.slice(1)) | 0];
@@ -375,6 +378,7 @@ export class TomasuloComponent implements OnInit {
         regDest.valor = result;
         regDest.reorder = Number(this.bufferReorder.find(buffer => buffer.inst.includes(opcode + " " + rD + " " + r1 + " " + r2))?.numInst);
         regDest.busy = true;
+        regDest.status = this.reservationStationComponent.find(reservation => reservation.dest === regDest.reorder).name;
         break;
       case 'sw':
         result = reg1.valor;
@@ -383,6 +387,13 @@ export class TomasuloComponent implements OnInit {
         regDest.busy = true;
         break;
     }
+  }
+
+  updateRegisters(numInst: number){
+    let register = this.registers.find(reg => reg.reorder === numInst);
+    register.status = 'value(' + register.status + ')';
+
+
   }
   // Arithmetic opcode Rm, Rn, Rd/*
   /*
@@ -396,7 +407,7 @@ export class TomasuloComponent implements OnInit {
     if(r2.includes('R')){
       reg2 = this.registers[Number(r2.slice(1)) | 0];
     }else{
-      reg2 = new Register(Number(r2), 0,true);
+      reg2 = new Register(Number(r2), 0,true, "");
     }
 
     let regDest = this.registers[Number(rD.slice(1)) | 0];
@@ -409,30 +420,35 @@ export class TomasuloComponent implements OnInit {
         regDest.valor = result;
         regDest.reorder = Number(this.bufferReorder.find(buffer => buffer.inst.includes(opcode + " " + rD + " " + r1 + " " + r2))?.numInst);
         regDest.busy = true;
+        regDest.status = this.reservationStationComponent.find(reservation => reservation.dest === regDest.reorder).name;
         break;
       case 'addi':
         result = reg1.valor + reg2.valor;
         regDest.valor = result;
         regDest.reorder = Number(this.bufferReorder.find(buffer => buffer.inst.includes(opcode + " " + rD + " " + r1 + " " + r2))?.numInst);
         regDest.busy = true;
+        regDest.status = this.reservationStationComponent.find(reservation => reservation.dest === regDest.reorder).name;
         break;
       case 'sub':
         result = reg1.valor - reg2.valor;
         regDest.valor = result;
         regDest.reorder = Number(this.bufferReorder.find(buffer => buffer.inst.includes(opcode + " " + rD + " " + r1 + " " + r2))?.numInst);
         regDest.busy = true;
+        regDest.status = this.reservationStationComponent.find(reservation => reservation.dest === regDest.reorder).name;
         break;
       case 'mult':
         result = reg1.valor * reg2.valor;
         regDest.valor = result;
         regDest.reorder = Number(this.bufferReorder.find(buffer => buffer.inst.includes(opcode + " " + rD + " " + r1 + " " + r2))?.numInst);
         regDest.busy = true;
+        regDest.status = this.reservationStationComponent.find(reservation => reservation.dest === regDest.reorder).name;
         break;
       case 'div':
         result = reg1.valor / reg2.valor;
         regDest.valor = result;
         regDest.reorder = Number(this.bufferReorder.find(buffer => buffer.inst.includes(opcode + " " + rD + " " + r1 + " " + r2))?.numInst);
         regDest.busy = true;
+        regDest.status = this.reservationStationComponent.find(reservation => reservation.dest === regDest.reorder).name;
         break;
       default:
 
@@ -459,25 +475,20 @@ export class TomasuloComponent implements OnInit {
 
   // MENU
   addInstructionMenu(){
-    let newInstructions = this.instructionsForm.value;
-    if(newInstructions.length > 1){
-      for(let inst of newInstructions){
-        let {op, regDest, reg1, reg2} = inst.value
-        this.instructionQueueAux.push(op + " " + regDest + " " + reg1 + " " + reg2);
-      }
-    }else{
-      let {op, regDest, reg1, reg2} = this.instructionsForm.value
-      this.instructionQueueAux.push(op + " " + regDest + " " + reg1 + " " + reg2);
+    this.submitted = true;
+    if (!this.instructionsForm.valid) {
+      return;
     }
 
+    let {op, regDest, reg1, reg2} = this.instructionsForm.value;
+    this.instructionQueueAux.push(op + " " + regDest + " " + reg1 + " " + reg2);
+    this.submitted = false;
     this.loadInstructionQueue(this.instructionQueueAux);
     this.instructionQueueAux.pop();
   }
 
   configureCycles(){
     let {add, mult, load, branch} = this.cyclesForm.value;
-
-    console.log(load);
 
     InstructionType.set("lw", {type: 'memory', cycles: (load <= 0)? 2 : load});
     InstructionType.set("sw", {type: 'memory', cycles: (load <= 0)? 2 : load});
@@ -487,6 +498,18 @@ export class TomasuloComponent implements OnInit {
     InstructionType.set("mult", {type: 'arithmetic', cycles: (mult <= 0)? 2 : mult});
     InstructionType.set("div", {type: 'arithmetic', cycles: (mult <= 0)? 2 : mult});
     InstructionType.set("beq", {type: 'branch', cycles: (branch <= 0)? 1 : branch});
+    this.submiteddCycles = true;
   }
+  get f(){ return this.instructionsForm.controls; }
+
+  counter(i: number) {
+    return new Array(i);
+  }
+
+  getRandomInt(min: any, max: any) : number{
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
 }
